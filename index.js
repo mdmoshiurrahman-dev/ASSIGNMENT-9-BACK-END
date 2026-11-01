@@ -27,10 +27,10 @@ export async function connectToMongoDB() {
 const mongodbClient = await connectToMongoDB();
 const database = mongodbClient.db("social-serve");
 const eventCollection = database.collection("events");
-
+const today = new Date().toISOString().split('T')[0];
 app.get("/recent-upcoming-events", async (req, res) => {
   const recentUpcomingEvents = await eventCollection
-    .find({})
+    .find({event_create_date:{$gte:today}})
     .sort({ event_create_date: 1 })
     .limit(6)
     .toArray();
