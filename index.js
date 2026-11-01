@@ -27,11 +27,12 @@ export async function connectToMongoDB() {
 const mongodbClient = await connectToMongoDB();
 const database = mongodbClient.db("social-serve");
 const eventCollection = database.collection("events");
-const today = new Date().toISOString().split('T')[0];
+const today = new Date().toISOString().split("T")[0];
+console.log(today);
 app.get("/recent-upcoming-events", async (req, res) => {
   const recentUpcomingEvents = await eventCollection
-    .find({event_create_date:{$gte:today}})
-    .sort({ event_create_date: 1 })
+    .find({ event_date: { $gte: today } })
+    .sort({ event_date: 1 })
     .limit(6)
     .toArray();
   res.send(recentUpcomingEvents);
@@ -50,4 +51,12 @@ app.post("/create-event", async (req, res) => {
   const data = req.body;
   const result = await eventCollection.insertOne(data);
   res.send(result);
+});
+
+app.get("/all-events", async (req, res) => {
+  const data = await eventCollection
+    .find({ event_date: { $gte: today } })
+    .sort({ event_date: 1 })
+    .toArray();
+  res.send(data);
 });
