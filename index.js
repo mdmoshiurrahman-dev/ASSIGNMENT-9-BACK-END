@@ -28,7 +28,6 @@ const mongodbClient = await connectToMongoDB();
 const database = mongodbClient.db("social-serve");
 const eventCollection = database.collection("events");
 const today = new Date().toISOString().split("T")[0];
-console.log(today);
 app.get("/recent-upcoming-events", async (req, res) => {
   const recentUpcomingEvents = await eventCollection
     .find({ event_date: { $gte: today } })
@@ -60,3 +59,12 @@ app.get("/all-events", async (req, res) => {
     .toArray();
   res.send(data);
 });
+
+app.get("/gallery-image", async (req, res) => {
+  const images = await eventCollection
+    .find({}, { projection: { event_cover_image: 1, event_title: 1 } })
+    .sort({ event_date: -1 })
+    .toArray();
+  res.send(images);
+});
+
