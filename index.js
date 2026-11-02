@@ -68,11 +68,22 @@ app.get("/gallery-image", async (req, res) => {
   res.send(images);
 });
 
-app.get("/event/:id",  async(req, res) => {
+app.get("/event/:id", async (req, res) => {
   const eventId = req.params.id;
   const query = { _id: new ObjectId(eventId) };
-  const data = await eventCollection.findOne(query)
-  res.send(data)
+  const data = await eventCollection.findOne(query);
+  res.send(data);
 });
 
-
+app.get("/related/:category", async (req, res) => {
+  const category = req.params.category;
+  const data = await eventCollection
+    .find({
+      category: category,
+      event_date: { $gte: today },
+    })
+    .sort({ event_date: 1 })
+    .limit(4)
+    .toArray();
+  res.send(data);
+});
