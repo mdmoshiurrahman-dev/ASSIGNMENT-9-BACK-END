@@ -1,7 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -67,4 +67,12 @@ app.get("/gallery-image", async (req, res) => {
     .toArray();
   res.send(images);
 });
+
+app.get("/event/:id",  async(req, res) => {
+  const eventId = req.params.id;
+  const query = { _id: new ObjectId(eventId) };
+  const data = await eventCollection.findOne(query)
+  res.send(data)
+});
+
 
