@@ -26,6 +26,7 @@ export async function connectToMongoDB() {
 }
 const mongodbClient = await connectToMongoDB();
 const database = mongodbClient.db("social-serve");
+const eventParticipantsCollection = database.collection("event-join-users");
 const eventCollection = database.collection("events");
 const today = new Date().toISOString().split("T")[0];
 app.get("/recent-upcoming-events", async (req, res) => {
@@ -83,7 +84,32 @@ app.get("/related/:category", async (req, res) => {
       event_date: { $gte: today },
     })
     .sort({ event_date: 1 })
-    .limit(4)
+    .limit(5)
     .toArray();
   res.send(data);
+});
+
+app.post("/join-event", async (req, res) => {
+  const joinedEventData = req.body;
+  const result = await eventParticipantsCollection.updateOne(
+    {
+      participant_email: joinedEventData.participant_email,
+    },
+    {
+      $addToSet: {
+        events: joinedEventData.event_id,
+      },
+    },
+    {
+      upsert: true,
+    },
+  );
+  if (result.matchedCount > 0 && result.modifiedCount === 0) {
+    return res.send({
+      message: "You have already joined this event!",
+    });
+  }
+  console.log(result)
+  res.send(result);
+  
 });
