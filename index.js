@@ -109,7 +109,16 @@ app.post("/join-event", async (req, res) => {
       message: "You have already joined this event!",
     });
   }
-  console.log(result)
   res.send(result);
-  
+});
+
+app.get("/get-join-event/:email", async (req, res) => {
+  const userEmail = req.params.email;
+  const userData = await eventParticipantsCollection.findOne({
+    participant_email: userEmail,
+  });
+  if (!userData) {
+    return res.send({});
+  }
+  res.send(userData);
 });
