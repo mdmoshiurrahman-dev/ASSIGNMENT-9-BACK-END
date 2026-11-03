@@ -104,12 +104,27 @@ app.post("/join-event", async (req, res) => {
       upsert: true,
     },
   );
+
   if (result.matchedCount > 0 && result.modifiedCount === 0) {
+    await eventParticipantsCollection.updateOne(
+      {
+        participant_email: joinedEventData.participant_email,
+      },
+      {
+        $pull: {
+          events: joinedEventData.event_id,
+        },
+      },
+    );
+
     return res.send({
-      message: "You have already joined this event!",
+      status: false,
     });
   }
-  res.send(result);
+
+  return res.send({
+    status: true,
+  });
 });
 
 app.get("/get-join-event/:email", async (req, res) => {
