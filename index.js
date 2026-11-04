@@ -137,3 +137,46 @@ app.get("/get-join-event/:email", async (req, res) => {
   }
   res.send(userData);
 });
+
+app.get("/get-created-events/:email", async (req, res) => {
+  const email = req.params.email;
+  const data = await eventCollection.find({ creator_email: email }).toArray();
+  res.send(data);
+});
+
+app.get("/delete/:id", async (req, res) => {
+  const query = { _id: new ObjectId(req.params.id) };
+  const result = await eventCollection.deleteOne(query);
+  res.send(result);
+});
+app.post("/update", async (req, res) => {
+  const updateData = req.body;
+  const id = { _id: new ObjectId(updateData._id) };
+
+  const result = await eventCollection.updateOne(id, {
+    $set: {
+      event_title: updateData.event_title,
+      category: updateData.category,
+      location: updateData.location,
+      event_date: updateData.event_date,
+      time: updateData.time,
+      event_cover_image: updateData.event_cover_image,
+      event_description: updateData.event_description,
+    },
+  });
+  res.send(result);
+});
+
+app.get("/get-joined-event/:email", async (req, res) => {
+  const email = req.params.email;
+  const { events } = await eventParticipantsCollection.findOne(
+    { participant_email: email },
+    { projection: { events: 1, _id: 0 } },
+  );
+  const joinedEvent = await eventCollection.find({
+    _id: {
+      $in: events.map((id) => new ObjectId(id)),
+    },
+  }).toArray()
+  res.send(joinedEvent)
+});
