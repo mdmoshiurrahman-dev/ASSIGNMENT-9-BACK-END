@@ -1,6 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
+import { jwtVerify, createRemoteJWKSet } from "jose";
 import { MongoClient, ObjectId } from "mongodb";
 const app = express();
 app.use(cors());
@@ -37,6 +38,22 @@ app.get("/recent-upcoming-events", async (req, res) => {
     .toArray();
   res.send(recentUpcomingEvents);
 });
+//! MIDDLEWARE-----------
+const apiVerify = async (req, res, next) => {
+  const jwt = req.headers.authorization;
+  if (!jwt) {
+    return res.send({ massage: "unauthorized" });
+  }
+  const token = jwt.split(" ")[1];
+  const JWKS = createRemoteJWKSet(
+    new URL(`${process.env.CLIENT_API_URL}/api/auth/jwks`),
+  );
+  const { payload } = await jwtVerify(token, JWKS);
+  if (!payload) {
+    return res.send({ massage: "token validation failed" });
+  }
+  next();
+};
 
 app.get("/old-gallery-image", async (req, res) => {
   const galleryImages = await eventCollection
@@ -47,7 +64,7 @@ app.get("/old-gallery-image", async (req, res) => {
   res.send(galleryImages);
 });
 
-app.post("/create-event", async (req, res) => {
+app.post("/create-event", apiVerify, async (req, res) => {
   const data = req.body;
   const result = await eventCollection.insertOne(data);
   res.send(result);
@@ -127,7 +144,7 @@ app.post("/join-event", async (req, res) => {
   });
 });
 
-app.get("/get-join-event/:email", async (req, res) => {
+app.get("/get-join-event/:email", apiVerify, async (req, res) => {
   const userEmail = req.params.email;
   const userData = await eventParticipantsCollection.findOne({
     participant_email: userEmail,
@@ -138,18 +155,18 @@ app.get("/get-join-event/:email", async (req, res) => {
   res.send(userData);
 });
 
-app.get("/get-created-events/:email", async (req, res) => {
+app.get("/get-created-events/:email", apiVerify, async (req, res) => {
   const email = req.params.email;
   const data = await eventCollection.find({ creator_email: email }).toArray();
   res.send(data);
 });
 
-app.get("/delete/:id", async (req, res) => {
+app.get("/delete/:id", apiVerify, async (req, res) => {
   const query = { _id: new ObjectId(req.params.id) };
   const result = await eventCollection.deleteOne(query);
   res.send(result);
 });
-app.post("/update", async (req, res) => {
+app.post("/update", apiVerify, async (req, res) => {
   const updateData = req.body;
   const id = { _id: new ObjectId(updateData._id) };
 
@@ -167,16 +184,37 @@ app.post("/update", async (req, res) => {
   res.send(result);
 });
 
-app.get("/get-joined-event/:email", async (req, res) => {
+app.get("/get-joined-event/:email", apiVerify, async (req, res) => {
   const email = req.params.email;
-  const { events } = await eventParticipantsCollection.findOne(
+  const eventsData = await eventParticipantsCollection.findOne(
     { participant_email: email },
     { projection: { events: 1, _id: 0 } },
   );
-  const joinedEvent = await eventCollection.find({
-    _id: {
-      $in: events.map((id) => new ObjectId(id)),
+
+  if (!eventsData) {
+    return res.send({ status: false });
+  }
+
+  const joinedEvent = await eventCollection
+    .find({
+      _id: {
+        $in: eventsData.events.map((id) => new ObjectId(id)),
+      },
+    })
+    .toArray();
+  res.send(joinedEvent);
+});
+
+app.delete("/delete-joined-event/:email/:id", apiVerify, async (req, res) => {
+  const id = req.params.id;
+  const email = req.params.email;
+  const result = await eventParticipantsCollection.updateOne(
+    { participant_email: email },
+    {
+      $pull: {
+        events: id,
+      },
     },
-  }).toArray()
-  res.send(joinedEvent)
+  );
+  res.send(result);
 });
