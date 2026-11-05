@@ -218,3 +218,5 @@ app.delete("/delete-joined-event/:email/:id", apiVerify, async (req, res) => {
   );
   res.send(result);
 });
+
+export default app
