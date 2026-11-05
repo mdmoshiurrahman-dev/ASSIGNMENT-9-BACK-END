@@ -6,7 +6,7 @@ import { MongoClient, ObjectId } from "mongodb";
 const app = express();
 app.use(cors());
 app.use(express.json());
-const port = "5000";
+const port = process.env.PORT
 app.listen(port, () => {
   console.log("server is running on ", port);
 });
