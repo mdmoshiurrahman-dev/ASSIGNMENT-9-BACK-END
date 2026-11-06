@@ -106,7 +106,7 @@ app.get("/related/:category", async (req, res) => {
   res.send(data);
 });
 
-app.post("/join-event", async (req, res) => {
+app.post("/join-event", apiVerify, async (req, res) => {
   const joinedEventData = req.body;
   const result = await eventParticipantsCollection.updateOne(
     {
